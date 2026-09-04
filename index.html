@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>내전 대진 편성기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0C10;
+    --panel:#14171D;
+    --panel-2:#1A1E25;
+    --line:#262B33;
+    --red:#FF4655;
+    --red-dim:#B5303F;
+    --gold:#F2C572;
+    --text:#ECE8E1;
+    --muted:#8B909A;
+    --teamA:#FF4655;
+    --teamB:#5AC8E8;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1100px 600px at 15% -10%, rgba(255,70,85,0.10), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(90,200,232,0.06), transparent 55%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Noto Sans KR', sans-serif;
+    min-height:100vh;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1040px;margin:0 auto;padding:56px 20px 90px;}
+
+  /* ---------- Hero ---------- */
+  .hero{margin-bottom:44px;position:relative;}
+  .hero .kicker{
+    display:flex;align-items:center;gap:10px;
+    color:var(--red);font-family:'Rajdhani',sans-serif;font-weight:700;
+    font-size:15px;letter-spacing:.14em;margin-bottom:14px;
+  }
+  .hero .kicker::before{content:"";width:26px;height:3px;background:var(--red);border-radius:2px;}
+  .hero h1{
+    font-family:'Rajdhani',sans-serif;font-weight:700;
+    font-size:clamp(34px,5vw,54px);line-height:1.05;margin:0 0 14px;
+    letter-spacing:.01em;
+  }
+  .hero p{color:var(--muted);font-size:16px;max-width:560px;margin:0;}
+  .language-switcher{position:absolute;top:0;right:0;display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px;}
+  .language-switcher select{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:7px;padding:7px 10px;font:500 12px 'Noto Sans KR',sans-serif;cursor:pointer;}
+  @media(max-width:600px){.language-switcher{position:static;margin-bottom:18px;justify-content:flex-end;}}
+
+  /* ---------- Section shell ---------- */
+  .section{margin-bottom:52px;}
+  .section-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:18px;flex-wrap:wrap;}
+  .section-head h2{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:24px;margin:0;}
+  .section-head .hint{color:var(--muted);font-size:13.5px;}
+
+  /* ---------- Player grid ---------- */
+  .players{
+    display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;
+  }
+  @media(max-width:700px){.players{grid-template-columns:1fr;}}
+  .player-row{
+    display:grid;grid-template-columns:26px 1fr 168px;align-items:center;gap:10px;
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    padding:9px 12px;
+  }
+  .player-row .num{
+    font-family:'Rajdhani',sans-serif;font-weight:700;color:var(--muted);font-size:15px;text-align:center;
+  }
+  .player-row input[type=text]{
+    background:transparent;border:none;outline:none;color:var(--text);
+    font-family:'Noto Sans KR';font-size:14.5px;font-weight:500;min-width:0;
+    border-bottom:1px solid transparent;padding:4px 2px;
+  }
+  .player-row input[type=text]:focus{border-bottom-color:var(--red);}
+  .player-row input[type=text]::placeholder{color:#565b64;}
+  .tier-pick{
+    display:flex;align-items:center;gap:8px;background:var(--panel-2);
+    border:1px solid var(--line);border-radius:8px;padding:4px 8px 4px 6px;
+  }
+  .tier-pick img{width:22px;height:22px;object-fit:contain;flex:none;}
+  .tier-pick select{
+    appearance:none;background:transparent;border:none;outline:none;color:var(--text);
+    font-family:'Noto Sans KR';font-size:13px;font-weight:500;width:100%;cursor:pointer;
+  }
+  .tier-pick select option{background:#14171D;color:var(--text);}
+
+  .actions{display:flex;align-items:center;gap:14px;margin-top:22px;flex-wrap:wrap;}
+  button.primary{
+    background:var(--red);color:#fff;border:none;border-radius:9px;
+    font-family:'Rajdhani',sans-serif;font-weight:700;font-size:17px;letter-spacing:.03em;
+    padding:13px 26px;cursor:pointer;transition:transform .12s ease, background .15s ease;
+  }
+  button.primary:hover{background:#ff5c6a;transform:translateY(-1px);}
+  button.primary:disabled{background:#3a2226;color:#8a6469;cursor:not-allowed;transform:none;}
+  button.ghost{
+    background:transparent;color:var(--muted);border:1px solid var(--line);border-radius:9px;
+    font-family:'Noto Sans KR';font-size:13.5px;font-weight:500;padding:11px 18px;cursor:pointer;
+  }
+  button.ghost:hover{color:var(--text);border-color:#3a4048;}
+  .status-msg{color:var(--muted);font-size:13.5px;}
+
+  /* ---------- Result ---------- */
+  .result{display:none;}
+  .result.show{display:block;}
+  .score-strip{
+    display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:18px;
+    margin-bottom:26px;
+  }
+  @media(max-width:640px){.score-strip{grid-template-columns:1fr;}}
+  .team-card{
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 20px 18px;
+    position:relative;overflow:hidden;
+  }
+  .team-card.A{border-top:3px solid var(--teamA);}
+  .team-card.B{border-top:3px solid var(--teamB);}
+  .team-card .team-label{
+    font-family:'Rajdhani',sans-serif;font-weight:700;font-size:14px;letter-spacing:.1em;
+    color:var(--muted);margin-bottom:2px;
+  }
+  .team-card.A .team-label{color:var(--teamA);}
+  .team-card.B .team-label{color:var(--teamB);}
+  .team-card .avg-line{display:flex;align-items:center;gap:8px;margin:6px 0 14px;}
+  .team-card .avg-line img{width:26px;height:26px;object-fit:contain;}
+  .team-card .avg-line .avg-name{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:19px;}
+  .team-card .members{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:7px;}
+  .team-card .members li{
+    display:flex;align-items:center;gap:9px;font-size:14px;padding:6px 8px;
+    background:var(--panel-2);border-radius:7px;
+  }
+  .team-card .members li img{width:18px;height:18px;object-fit:contain;flex:none;}
+  .team-card .members li .mname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .team-card .members li .mtier{color:var(--muted);font-size:12px;flex:none;}
+  .win-badge{
+    position:absolute;top:16px;right:16px;background:var(--gold);color:#241a06;
+    font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11.5px;letter-spacing:.08em;
+    padding:4px 9px;border-radius:20px;
+  }
+
+  .vs-block{display:flex;flex-direction:column;align-items:center;gap:10px;padding:0 4px;}
+  .vs-block .vs-label{font-family:'Rajdhani',sans-serif;color:var(--muted);font-weight:600;font-size:13px;letter-spacing:.12em;}
+  .vs-block .score{
+    font-family:'Rajdhani',sans-serif;font-weight:700;font-size:44px;line-height:1;white-space:nowrap;
+  }
+  .vs-block .score .a{color:var(--teamA);}
+  .vs-block .score .sep{color:var(--muted);margin:0 8px;font-weight:500;}
+  .vs-block .score .b{color:var(--teamB);}
+  .vs-block .verdict{color:var(--muted);font-size:12.5px;text-align:center;max-width:150px;}
+
+  .reroll-row{display:flex;justify-content:center;margin-bottom:6px;}
+
+  /* ---------- Map grid ---------- */
+  .map-grid{
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px;
+  }
+  .map-card{
+    border-radius:14px;overflow:hidden;background:var(--panel);border:1px solid var(--line);
+    display:flex;flex-direction:column;
+  }
+  .map-card .splash{
+    height:110px;background-size:cover;background-position:center;position:relative;
+    background-color:#1c1f26;
+  }
+  .map-card .splash::after{
+    content:"";position:absolute;inset:0;
+    background:linear-gradient(180deg, rgba(10,12,16,0.05) 0%, rgba(10,12,16,0.9) 100%);
+  }
+  .map-card .splash .map-name{
+    position:absolute;left:12px;bottom:9px;z-index:1;
+    font-family:'Rajdhani',sans-serif;font-weight:700;font-size:19px;
+  }
+  .map-card .comp{padding:12px 14px 15px;display:flex;flex-direction:column;gap:8px;}
+  .role-line{display:flex;align-items:center;gap:8px;}
+  .role-line .role-tag{
+    font-size:10.5px;color:var(--muted);width:52px;flex:none;font-weight:500;
+  }
+  .role-line .agents{display:flex;gap:5px;flex-wrap:wrap;}
+  .role-line .agents .chip{
+    display:flex;align-items:center;gap:4px;background:var(--panel-2);border:1px solid var(--line);
+    border-radius:20px;padding:2px 8px 2px 3px;
+  }
+  .role-line .agents .chip img{width:18px;height:18px;border-radius:50%;object-fit:cover;background:#000;}
+  .role-line .agents .chip span{font-size:11.5px;color:var(--text);}
+
+  .loading-note{color:var(--muted);font-size:13.5px;padding:30px 0;text-align:center;}
+  footer{color:#565b64;font-size:12px;text-align:center;margin-top:60px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="language-switcher">
+      <label for="languageSelect" data-i18n="languageLabel">언어</label>
+      <select id="languageSelect" aria-label="언어 선택">
+        <option value="ko">한국어</option>
+        <option value="en">English</option>
+        <option value="ja">日本語</option>
+      </select>
+    </div>
+    <div class="kicker">SCRIM MATCHMAKER</div>
+    <h1 data-i18n="title">발로란트 내전 대진 편성기</h1>
+    <p data-i18n="description">10명의 티어를 입력하면 두 팀의 평균 티어를 최대한 맞춰 나누고, 예상 스코어와 맵별 추천 조합까지 한 번에 확인하세요.</p>
+  </div>
+
+  <div id="loadingNote" class="loading-note" data-i18n="loading">라이엇 데이터 불러오는 중…</div>
+
+  <div id="app" style="display:none;">
+
+    <div class="section">
+      <div class="section-head">
+        <h2 data-i18n="playerInput">선수 입력</h2>
+        <span class="hint" data-i18n="playerHint">이름과 현재 티어를 입력하세요 (10명)</span>
+      </div>
+      <div class="players" id="playerGrid"></div>
+      <div class="actions">
+        <button class="primary" id="buildBtn" data-i18n="buildTeams">팀 편성하기</button>
+        <span class="status-msg" id="statusMsg"></span>
+      </div>
+    </div>
+
+    <div class="section result" id="resultSection">
+      <div class="section-head">
+        <h2 data-i18n="resultTitle">편성 결과</h2>
+        <span class="hint" data-i18n="resultHint">평균 티어 차이를 최소화한 조합입니다</span>
+      </div>
+
+      <div class="score-strip">
+        <div class="team-card A" id="teamCardA"></div>
+        <div class="vs-block">
+          <div class="vs-label" data-i18n="predictedScore">예상 세트 스코어</div>
+          <div class="score" id="scoreLine"></div>
+          <div class="verdict" id="verdictLine"></div>
+        </div>
+        <div class="team-card B" id="teamCardB"></div>
+      </div>
+
+      <div class="reroll-row">
+        <button class="ghost" id="rerollBtn" data-i18n="reroll">다른 균형 조합 보기</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <h2 data-i18n="mapRecommendations">맵별 추천 조합</h2>
+        <span class="hint" data-i18n="mapHint">V26 ACT V 기준</span>
+      </div>
+      <div class="map-grid" id="mapGrid"></div>
+    </div>
+
+  </div>
+
+  <footer data-i18n="footer">Riot Games API 비공식 데이터(valorant-api.com) 기반 · Riot Games와 무관한 팬 제작 도구</footer>
+</div>
+
+<script>
+(function(){
+  const TIERSET_URL = "https://valorant-api.com/v1/competitivetiers/03621f52-342b-cf4e-4f86-9350a49c6d04";
+  const AGENTS_URL = "https://valorant-api.com/v1/agents?isPlayableCharacter=true";
+  const MAPS_URL = "https://valorant-api.com/v1/maps";
+
+  const PLAYER_COUNT = 10;
+
+  const I18N = {
+    ko: {
+      languageLabel:'언어', title:'발로란트 내전 대진 편성기', description:'10명의 티어를 입력하면 두 팀의 평균 티어를 최대한 맞춰 나누고, 예상 스코어와 맵별 추천 조합까지 한 번에 확인하세요.', loading:'라이엇 데이터 불러오는 중…', playerInput:'선수 입력', playerHint:'이름과 현재 티어를 입력하세요 (10명)', buildTeams:'팀 편성하기', resultTitle:'편성 결과', resultHint:'평균 티어 차이를 최소화한 조합입니다', predictedScore:'예상 세트 스코어', reroll:'다른 균형 조합 보기', mapRecommendations:'맵별 추천 조합', mapHint:'V26 ACT V 기준', footer:'Riot Games API 비공식 데이터(valorant-api.com) 기반 · Riot Games와 무관한 팬 제작 도구', player:'플레이어', win:'승리 예상', average:'평균', even:'거의 대등한 매치업이에요', slight:'{team} 쪽이 약간 우세해요', large:'{team} 쪽으로 크게 기울어요', balanced:'균형 조합 {count}개 중 {current}번째 (팀 평균 차이: {diff})', noReroll:'이 인원 조합에서는 더 균형잡힌 다른 조합이 없어요.', fetchError:'Riot 데이터를 불러오지 못했어요. 잠시 후 새로고침 해주세요.', tierError:'티어 데이터를 불러오지 못했어요.', roles:{duelist:'타격대',controller:'전략가',initiator:'척후대',sentinel:'감시자'}
+    },
+    en: {
+      languageLabel:'Language', title:'VALORANT Scrim Matchmaker', description:'Enter the tiers of 10 players to create two evenly matched teams, then view the predicted score and map compositions.', loading:'Loading Riot data…', playerInput:'Player Input', playerHint:'Enter names and current tiers (10 players)', buildTeams:'Build Teams', resultTitle:'Match Result', resultHint:'The teams are balanced to minimize the average tier difference.', predictedScore:'Predicted Series Score', reroll:'Show Another Balanced Matchup', mapRecommendations:'Recommended Map Compositions', mapHint:'Based on V26 ACT V', footer:'Based on unofficial Riot Games API data (valorant-api.com) · A fan-made tool not affiliated with Riot Games', player:'Player', win:'WIN PREDICTION', average:'Average', even:'This matchup is nearly even', slight:'{team} has a slight advantage', large:'The matchup leans heavily toward {team}', balanced:'Balanced matchup {current} of {count} (team average difference: {diff})', noReroll:'There is no other more balanced matchup for these players.', fetchError:'Could not load Riot data. Please refresh and try again.', tierError:'Could not load tier data.', roles:{duelist:'Duelist',controller:'Controller',initiator:'Initiator',sentinel:'Sentinel'}
+    },
+    ja: {
+      languageLabel:'言語', title:'VALORANT内戦マッチメーカー', description:'10人のティアを入力すると、両チームの平均ティアができるだけ近くなるように編成し、予想スコアとマップ別のおすすめ構成を確認できます。', loading:'Riotデータを読み込み中…', playerInput:'プレイヤー入力', playerHint:'名前と現在のティアを入力してください（10人）', buildTeams:'チームを編成', resultTitle:'編成結果', resultHint:'平均ティアの差を最小限にした組み合わせです', predictedScore:'予想セットスコア', reroll:'別のバランス編成を見る', mapRecommendations:'マップ別おすすめ構成', mapHint:'V26 ACT V基準', footer:'非公式Riot Games APIデータ（valorant-api.com）に基づく · Riot Gamesとは無関係のファン制作ツール', player:'プレイヤー', win:'勝利予想', average:'平均', even:'ほぼ互角のマッチアップです', slight:'{team}がやや有利です', large:'{team}が大きく有利です', balanced:'バランス編成 {current} / {count}（チーム平均差: {diff}）', noReroll:'このメンバーでは、これ以上バランスの良い編成はありません。', fetchError:'Riotデータを読み込めませんでした。しばらくしてから再読み込みしてください。', tierError:'ティアデータを読み込めませんでした。', roles:{duelist:'デュエリスト',controller:'コントローラー',initiator:'イニシエーター',sentinel:'センチネル'}
+    }
+  };
+  let currentLanguage = localStorage.getItem('scrim-language') || 'ko';
+  const t = (key, vars={}) => Object.entries(vars).reduce((s,[k,v]) => s.replaceAll('{'+k+'}', v), I18N[currentLanguage][key] || key);
+  function applyLanguage(){
+    const lang = I18N[currentLanguage];
+    document.documentElement.lang = currentLanguage;
+    $$('[data-i18n]').forEach(el => { el.textContent = lang[el.dataset.i18n] || el.textContent; });
+    ROLE_LABELS = lang.roles;
+    if($('#languageSelect')) $('#languageSelect').value = currentLanguage;
+    if(TIERS.length) renderPlayerGrid();
+    if(MAPS.length) renderMapGrid();
+    if(currentPlayers.length && currentSplits.length) renderResult();
+  }
+
+  // fallback generic composition if a map isn't in the curated table
+  const GENERIC_COMP = { duelist:['Reyna'], controller:['Omen'], initiator:['Sova','Fade'], sentinel:['Cypher'] };
+
+  const MAP_COMPS = {
+    'ascent':   { duelist:['Jett'],  controller:['Omen'],      initiator:['Sova','Skye'],   sentinel:['Killjoy'] },
+    'bind':     { duelist:['Raze'],  controller:['Brimstone'], initiator:['Skye','Fade'],   sentinel:['Killjoy'] },
+    'haven':    { duelist:['Jett'],  controller:['Astra'],     initiator:['Sova','Breach'], sentinel:['Cypher'] },
+    'split':    { duelist:['Raze'],  controller:['Viper'],     initiator:['Sova','Breach'], sentinel:['Cypher'] },
+    'icebox':   { duelist:['Jett'],  controller:['Viper'],     initiator:['Sova','Fade'],   sentinel:['Killjoy'] },
+    'breeze':   { duelist:['Jett'],  controller:['Harbor'],    initiator:['Skye','Sova'],   sentinel:['Chamber'] },
+    'fracture': { duelist:['Raze'],  controller:['Brimstone'], initiator:['Breach','Fade'], sentinel:['Killjoy'] },
+    'pearl':    { duelist:['Jett'],  controller:['Astra'],     initiator:['Sova','Fade'],   sentinel:['Cypher'] },
+    'lotus':    { duelist:['Raze'],  controller:['Viper'],     initiator:['Fade','Skye'],   sentinel:['Killjoy'] },
+    'sunset':   { duelist:['Jett'],  controller:['Omen'],      initiator:['Sova','Fade'],   sentinel:['Cypher'] },
+    'abyss':    { duelist:['Neon'],  controller:['Clove'],     initiator:['Gekko','Fade'],  sentinel:['Killjoy'] },
+    'corrode':  { duelist:['Neon'],  controller:['Viper'],     initiator:['Sova','Fade'],   sentinel:['Vyse'] }
+  };
+  let ROLE_LABELS = I18N[currentLanguage].roles;
+
+  let TIERS = [];       // [{tier, name, icon}]
+  let AGENTS_BY_NAME = {}; // lowercase name -> {name, icon}
+  let MAPS = [];         // [{name, splash}]
+
+  const $ = (sel, root=document) => root.querySelector(sel);
+  const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+
+  async function fetchJSON(url){
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('fetch failed: '+url);
+    const json = await res.json();
+    return json.data;
+  }
+
+  async function loadData(){
+    const [tierData, agentData, mapData] = await Promise.all([
+      fetchJSON(TIERSET_URL),
+      fetchJSON(AGENTS_URL),
+      fetchJSON(MAPS_URL)
+    ]);
+
+    TIERS = (tierData.tiers || [])
+      .filter(t => t.tierName && t.tier > 2 && t.smallIcon)
+      .map(t => ({ tier: t.tier, name: toTitleCase(t.tierName), icon: t.smallIcon }))
+      .sort((a,b) => a.tier - b.tier);
+
+    (agentData || []).forEach(a => {
+      if(a.displayName && a.displayIcon){
+        AGENTS_BY_NAME[a.displayName.toLowerCase()] = { name: a.displayName, icon: a.displayIcon };
+      }
+    });
+
+    MAPS = (mapData || [])
+      .filter(m => m.displayName && m.coordinates && m.splash && m.displayName.toLowerCase() !== 'the range')
+      .map(m => ({ name: m.displayName, splash: m.splash }))
+      .sort((a,b) => a.name.localeCompare(b.name));
+  }
+
+  function toTitleCase(s){
+    return s.split(' ').map(w => w.charAt(0).toUpperCase()+w.slice(1).toLowerCase()).join(' ');
+  }
+
+  function nearestTier(avgValue){
+    let best = TIERS[0];
+    let bestDiff = Infinity;
+    TIERS.forEach(t => {
+      const d = Math.abs(t.tier - avgValue);
+      if(d < bestDiff){ bestDiff = d; best = t; }
+    });
+    return best;
+  }
+
+  // ---------- Player input rendering ----------
+  function renderPlayerGrid(){
+    const grid = $('#playerGrid');
+    const existing = $$('.player-row', grid).map(row => ({
+      name: $('input[data-role=name]', row)?.value || '',
+      tierIdx: Number($('select[data-role=tier]', row)?.value || 0)
+    }));
+    grid.innerHTML = '';
+    const midIdx = Math.floor(TIERS.length/2);
+    for(let i=0;i<PLAYER_COUNT;i++){
+      const row = document.createElement('div');
+      row.className = 'player-row';
+
+      const num = document.createElement('div');
+      num.className = 'num';
+      num.textContent = i+1;
+
+      const nameInput = document.createElement('input');
+      nameInput.type = 'text';
+      nameInput.placeholder = t('player')+' '+(i+1);
+      nameInput.value = existing[i]?.name || '';
+      nameInput.dataset.role = 'name';
+      nameInput.maxLength = 14;
+
+      const tierPick = document.createElement('div');
+      tierPick.className = 'tier-pick';
+      const icon = document.createElement('img');
+      icon.src = TIERS[midIdx].icon;
+      icon.alt = '';
+      const select = document.createElement('select');
+      select.dataset.role = 'tier';
+      TIERS.forEach((t, idx) => {
+        const opt = document.createElement('option');
+        opt.value = idx;
+        opt.textContent = t.name;
+        if(idx === (existing[i]?.tierIdx ?? midIdx)) opt.selected = true;
+        select.appendChild(opt);
+      });
+      select.addEventListener('change', () => {
+        icon.src = TIERS[Number(select.value)].icon;
+      });
+      tierPick.appendChild(icon);
+      tierPick.appendChild(select);
+
+      row.appendChild(num);
+      row.appendChild(nameInput);
+      row.appendChild(tierPick);
+      grid.appendChild(row);
+    }
+  }
+
+  function readPlayers(){
+    return $$('.player-row').map((row, i) => {
+      const name = $('input[data-role=name]', row).value.trim() || (t('player')+' '+(i+1));
+      const tierIdx = Number($('select[data-role=tier]', row).value);
+      return { name, tierIdx, tier: TIERS[tierIdx] };
+    });
+  }
+
+  // ---------- Balancing ----------
+  function combinations(n,k){
+    const res = [];
+    function bt(start, combo){
+      if(combo.length === k){ res.push(combo.slice()); return; }
+      for(let i=start;i<n;i++){ combo.push(i); bt(i+1, combo); combo.pop(); }
+    }
+    bt(0, []);
+    return res;
+  }
+
+  function allBalancedSplits(players){
+    const n = players.length;
+    const combos = combinations(n, 5);
+    const seen = new Set();
+    const splits = [];
+    combos.forEach(c => {
+      const rest = [...Array(n).keys()].filter(i => !c.includes(i));
+      const key = [c.slice().sort((a,b)=>a-b).join(','), rest.slice().sort((a,b)=>a-b).join(',')].sort().join('|');
+      if(seen.has(key)) return;
+      seen.add(key);
+      const sumA = c.reduce((s,i)=>s+players[i].tier.tier, 0);
+      const sumB = rest.reduce((s,i)=>s+players[i].tier.tier, 0);
+      splits.push({ a:c, b:rest, diff: Math.abs(sumA-sumB), sumA, sumB });
+    });
+    splits.sort((x,y) => x.diff - y.diff);
+    return splits;
+  }
+
+  let currentSplits = [];
+  let currentSplitIdx = 0;
+  let currentPlayers = [];
+
+  function predictScore(avgA, avgB){
+    const diff = avgA - avgB;
+    const p = 1 / (1 + Math.exp(-diff/3)); // probability team A wins
+    const margin = Math.abs(p - 0.5) * 2;   // 0 (even) .. 1 (huge gap)
+    const loser = Math.min(11, Math.max(0, Math.round(13 * (1 - margin))));
+    const aWins = diff >= 0;
+    return { winnerIsA: aWins, winnerScore: 13, loserScore: loser, margin };
+  }
+
+  function renderTeamCard(el, label, idxList, players, colorClass, isWinner){
+    const teamPlayers = idxList.map(i => players[i]);
+    const avg = teamPlayers.reduce((s,p)=>s+p.tier.tier,0) / teamPlayers.length;
+    const avgTier = nearestTier(avg);
+    el.innerHTML = '';
+    if(isWinner){
+      const badge = document.createElement('div');
+      badge.className = 'win-badge';
+      badge.textContent = t('win');
+      el.appendChild(badge);
+    }
+    const labelEl = document.createElement('div');
+    labelEl.className = 'team-label';
+    labelEl.textContent = label;
+    el.appendChild(labelEl);
+
+    const avgLine = document.createElement('div');
+    avgLine.className = 'avg-line';
+    avgLine.innerHTML = '<img src="'+avgTier.icon+'" alt=""><span class="avg-name">'+t('average')+' '+avgTier.name+'</span>';
+    el.appendChild(avgLine);
+
+    const ul = document.createElement('ul');
+    ul.className = 'members';
+    teamPlayers
+      .slice()
+      .sort((a,b) => b.tier.tier - a.tier.tier)
+      .forEach(p => {
+        const li = document.createElement('li');
+        li.innerHTML = '<img src="'+p.tier.icon+'" alt=""><span class="mname">'+escapeHtml(p.name)+'</span><span class="mtier">'+p.tier.name+'</span>';
+        ul.appendChild(li);
+      });
+    el.appendChild(ul);
+  }
+
+  function escapeHtml(s){
+    return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function renderResult(){
+    const split = currentSplits[currentSplitIdx];
+    const players = currentPlayers;
+    const avgA = split.sumA / split.a.length;
+    const avgB = split.sumB / split.b.length;
+    const pred = predictScore(avgA, avgB);
+
+    renderTeamCard($('#teamCardA'), 'TEAM A', split.a, players, 'A', pred.winnerIsA);
+    renderTeamCard($('#teamCardB'), 'TEAM B', split.b, players, 'B', !pred.winnerIsA);
+
+    const scoreLine = $('#scoreLine');
+    if(pred.winnerIsA){
+      scoreLine.innerHTML = '<span class="a">'+pred.winnerScore+'</span><span class="sep">:</span><span class="b">'+pred.loserScore+'</span>';
+    } else {
+      scoreLine.innerHTML = '<span class="a">'+pred.loserScore+'</span><span class="sep">:</span><span class="b">'+pred.winnerScore+'</span>';
+    }
+
+    const verdict = $('#verdictLine');
+    if(pred.margin < 0.08){
+      verdict.textContent = t('even');
+    } else if(pred.margin < 0.35){
+      verdict.textContent = t('slight', {team:pred.winnerIsA?'TEAM A':'TEAM B'});
+    } else {
+      verdict.textContent = t('large', {team:pred.winnerIsA?'TEAM A':'TEAM B'});
+    }
+
+    $('#resultSection').classList.add('show');
+    $('#statusMsg').textContent = t('balanced', {count:currentSplits.length, current:currentSplitIdx+1, diff:split.diff});
+  }
+
+  function buildTeams(){
+    const players = readPlayers();
+    currentPlayers = players;
+    currentSplits = allBalancedSplits(players);
+    currentSplitIdx = 0;
+    renderResult();
+    $('#resultSection').scrollIntoView({ behavior:'smooth', block:'start' });
+  }
+
+  function reroll(){
+    if(currentSplits.length === 0) return;
+    const bestDiff = currentSplits[0].diff;
+    const tied = currentSplits.filter(s => s.diff === bestDiff);
+    if(tied.length <= 1){
+      $('#statusMsg').textContent = t('noReroll');
+      return;
+    }
+    currentSplitIdx = (currentSplitIdx + 1) % tied.length;
+    // map back to index within currentSplits (tied are the first N since sorted)
+    renderResult();
+  }
+
+  // ---------- Map recommendations ----------
+  function agentChip(name){
+    const key = name.toLowerCase();
+    const agent = AGENTS_BY_NAME[key];
+    if(!agent){
+      return '<span class="chip"><span>'+escapeHtml(name)+'</span></span>';
+    }
+    return '<span class="chip"><img src="'+agent.icon+'" alt=""><span>'+escapeHtml(agent.name)+'</span></span>';
+  }
+
+  function renderMapGrid(){
+    const grid = $('#mapGrid');
+    grid.innerHTML = '';
+    MAPS.forEach(m => {
+      const key = m.name.toLowerCase();
+      const comp = MAP_COMPS[key] || GENERIC_COMP;
+      const card = document.createElement('div');
+      card.className = 'map-card';
+
+      const splash = document.createElement('div');
+      splash.className = 'splash';
+      splash.style.backgroundImage = "url('"+m.splash+"')";
+      const nameEl = document.createElement('div');
+      nameEl.className = 'map-name';
+      nameEl.textContent = m.name;
+      splash.appendChild(nameEl);
+      card.appendChild(splash);
+
+      const compEl = document.createElement('div');
+      compEl.className = 'comp';
+      ['duelist','controller','initiator','sentinel'].forEach(role => {
+        const line = document.createElement('div');
+        line.className = 'role-line';
+        const tag = document.createElement('div');
+        tag.className = 'role-tag';
+        tag.textContent = ROLE_LABELS[role];
+        const agentsWrap = document.createElement('div');
+        agentsWrap.className = 'agents';
+        agentsWrap.innerHTML = comp[role].map(agentChip).join('');
+        line.appendChild(tag);
+        line.appendChild(agentsWrap);
+        compEl.appendChild(line);
+      });
+      card.appendChild(compEl);
+      grid.appendChild(card);
+    });
+  }
+
+  // ---------- Init ----------
+  async function init(){
+    try{
+      await loadData();
+    }catch(err){
+      $('#loadingNote').textContent = t('fetchError');
+      return;
+    }
+    if(TIERS.length === 0){
+      $('#loadingNote').textContent = t('tierError');
+      return;
+    }
+    renderPlayerGrid();
+    renderMapGrid();
+    $('#loadingNote').style.display = 'none';
+    $('#app').style.display = 'block';
+
+    $('#buildBtn').addEventListener('click', buildTeams);
+    $('#rerollBtn').addEventListener('click', reroll);
+    $('#languageSelect').addEventListener('change', e => {
+      currentLanguage = e.target.value;
+      localStorage.setItem('scrim-language', currentLanguage);
+      applyLanguage();
+    });
+    applyLanguage();
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
