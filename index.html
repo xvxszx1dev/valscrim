@@ -106,6 +106,31 @@
   button.ghost:hover{color:var(--text);border-color:#3a4048;}
   .status-msg{color:var(--muted);font-size:13.5px;}
 
+  /* ---------- Mode tabs & format picker ---------- */
+  .mode-tabs{display:flex;gap:8px;margin-bottom:16px;}
+  .mode-tab{
+    background:var(--panel);color:var(--muted);border:1px solid var(--line);border-radius:9px;
+    font-family:'Noto Sans KR';font-size:13.5px;font-weight:700;padding:9px 16px;cursor:pointer;
+    transition:color .15s ease, border-color .15s ease, background .15s ease;
+  }
+  .mode-tab:hover{color:var(--text);}
+  .mode-tab.active{background:var(--red);border-color:var(--red);color:#fff;}
+  .format-row{display:flex;align-items:center;gap:12px;margin-bottom:22px;flex-wrap:wrap;}
+  .format-row .format-label{color:var(--muted);font-size:13px;font-weight:500;}
+  .format-pick{display:flex;gap:8px;}
+  .format-btn{
+    background:var(--panel-2);color:var(--muted);border:1px solid var(--line);border-radius:8px;
+    font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;letter-spacing:.02em;
+    padding:7px 14px;cursor:pointer;transition:color .15s ease, border-color .15s ease, background .15s ease;
+  }
+  .format-btn:hover{color:var(--text);border-color:#3a4048;}
+  .format-btn.active{background:var(--gold);border-color:var(--gold);color:#241a06;}
+  .sub-head{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:16px;letter-spacing:.03em;margin:0 0 10px;}
+  .sub-head.A{color:var(--teamA);}
+  .sub-head.B{color:var(--teamB);}
+  .team-input-block{margin-bottom:22px;}
+  .format-note{color:var(--muted);font-size:11.5px;margin-top:4px;letter-spacing:.04em;}
+
   /* ---------- Result ---------- */
   .result{display:none;}
   .result.show{display:block;}
@@ -197,7 +222,7 @@
 
   <div class="hero">
     <div class="language-switcher">
-      <label for="languageSelect" data-i18n="languageLabel">언어</label>
+      <label for="languageSelect" data-i18n="languageLabel">Lang</label>
       <select id="languageSelect" aria-label="언어 선택">
         <option value="ko">한국어</option>
         <option value="en">English</option>
@@ -216,32 +241,64 @@
     <div class="section">
       <div class="section-head">
         <h2 data-i18n="playerInput">선수 입력</h2>
-        <span class="hint" data-i18n="playerHint">이름과 현재 티어를 입력하세요 (10명)</span>
+        <span class="hint" id="playerHintText" data-i18n="playerHint">이름과 현재 티어를 입력하세요 (10명)</span>
       </div>
-      <div class="players" id="playerGrid"></div>
-      <div class="actions">
-        <button class="primary" id="buildBtn" data-i18n="buildTeams">팀 편성하기</button>
-        <span class="status-msg" id="statusMsg"></span>
+
+      <div class="mode-tabs">
+        <button class="mode-tab active" id="modeAutoBtn" data-i18n="autoMode">자동 편성</button>
+        <button class="mode-tab" id="modeManualBtn" data-i18n="manualMode">팀이 이미 정해짐</button>
+      </div>
+
+      <div class="format-row">
+        <span class="format-label" data-i18n="matchFormat">경기 방식</span>
+        <div class="format-pick">
+          <button class="format-btn active" id="formatBo3Btn" data-wins="2" data-i18n="bo3">3판 2선승제 (BO3)</button>
+          <button class="format-btn" id="formatBo5Btn" data-wins="3" data-i18n="bo5">5판 3선승제 (BO5)</button>
+        </div>
+      </div>
+
+      <div id="autoSection">
+        <div class="players" id="playerGrid"></div>
+        <div class="actions">
+          <button class="primary" id="buildBtn" data-i18n="buildTeams">팀 편성하기</button>
+          <span class="status-msg" id="statusMsg"></span>
+        </div>
+      </div>
+
+      <div id="manualSection" style="display:none;">
+        <div class="team-input-block">
+          <div class="sub-head A" data-i18n="teamALabel">TEAM A</div>
+          <div class="players" id="playerGridA"></div>
+        </div>
+        <div class="team-input-block">
+          <div class="sub-head B" data-i18n="teamBLabel">TEAM B</div>
+          <div class="players" id="playerGridB"></div>
+        </div>
+        <div class="actions">
+          <button class="primary" id="predictBtn" data-i18n="predictMatch">승부 예측하기</button>
+          <span class="status-msg" id="statusMsgManual"></span>
+        </div>
       </div>
     </div>
 
     <div class="section result" id="resultSection">
       <div class="section-head">
         <h2 data-i18n="resultTitle">편성 결과</h2>
-        <span class="hint" data-i18n="resultHint">평균 티어 차이를 최소화한 조합입니다</span>
+        <span class="hint" id="resultHintText" data-i18n="resultHint">평균 티어 차이를 최소화한 조합입니다</span>
       </div>
 
       <div class="score-strip">
         <div class="team-card A" id="teamCardA"></div>
         <div class="vs-block">
-          <div class="vs-label" data-i18n="predictedScore">예상 세트 스코어</div>
+          <div class="vs-label" id="predictedScoreLabel" data-i18n="predictedScore">예상 매치 스코어</div>
           <div class="score" id="scoreLine"></div>
           <div class="verdict" id="verdictLine"></div>
+          <div class="format-note" id="formatNote"></div>
         </div>
         <div class="team-card B" id="teamCardB"></div>
       </div>
 
-      <div class="reroll-row">
+      <div class="reroll-row" id="rerollRow">
         <button class="ghost" id="rerollBtn" data-i18n="reroll">다른 균형 조합 보기</button>
       </div>
     </div>
@@ -256,7 +313,7 @@
 
   </div>
 
-  <footer data-i18n="footer">Riot Games API 비공식 데이터(valorant-api.com) 기반 · Riot Games와 무관한 팬 제작 도구</footer>
+  <footer data-i18n="footer">β2.0</footer>
 </div>
 
 <script>
@@ -269,16 +326,21 @@
 
   const I18N = {
     ko: {
-      languageLabel:'언어', title:'발로란트 내전 대진 편성기', description:'10명의 티어를 입력하면 두 팀의 평균 티어를 최대한 맞춰 나누고, 예상 스코어와 맵별 추천 조합까지 한 번에 확인하세요.', loading:'라이엇 데이터 불러오는 중…', playerInput:'선수 입력', playerHint:'이름과 현재 티어를 입력하세요 (10명)', buildTeams:'팀 편성하기', resultTitle:'편성 결과', resultHint:'평균 티어 차이를 최소화한 조합입니다', predictedScore:'예상 세트 스코어', reroll:'다른 균형 조합 보기', mapRecommendations:'맵별 추천 조합', mapHint:'V26 ACT V 기준', footer:'Riot Games API 비공식 데이터(valorant-api.com) 기반 · Riot Games와 무관한 팬 제작 도구', player:'플레이어', win:'승리 예상', average:'평균', even:'거의 대등한 매치업이에요', slight:'{team} 쪽이 약간 우세해요', large:'{team} 쪽으로 크게 기울어요', balanced:'균형 조합 {count}개 중 {current}번째 (팀 평균 차이: {diff})', noReroll:'이 인원 조합에서는 더 균형잡힌 다른 조합이 없어요.', fetchError:'Riot 데이터를 불러오지 못했어요. 잠시 후 새로고침 해주세요.', tierError:'티어 데이터를 불러오지 못했어요.', roles:{duelist:'타격대',controller:'전략가',initiator:'척후대',sentinel:'감시자'}
+      languageLabel:'언어', title:'발로란트 내전 대진 편성기', description:'10명의 티어를 입력하면 두 팀의 평균 티어를 최대한 맞춰 나누고, 예상 스코어와 맵별 추천 조합까지 한 번에 확인하세요.', loading:'라이엇 데이터 불러오는 중…', playerInput:'선수 입력', playerHint:'이름과 현재 티어를 입력하세요 (10명)', playerHintManual:'각 팀에 이름과 현재 티어를 입력하세요 (5명씩)', buildTeams:'팀 편성하기', resultTitle:'편성 결과', resultHint:'평균 티어 차이를 최소화한 조합입니다', resultHintManual:'입력한 팀 그대로 승부를 예측한 결과입니다', predictedScore:'예상 매치 스코어', reroll:'다른 균형 조합 보기', mapRecommendations:'맵별 추천 조합', mapHint:'V26 ACT V 기준', footer:'아직 베타버전입니다. 더 많은 업데이트가 진행될겁니다.', player:'플레이어', win:'승리 예상', average:'평균', even:'거의 대등한 매치업이에요', slight:'{team} 쪽이 약간 우세해요', large:'{team} 쪽으로 크게 기울어요', balanced:'균형 조합 {count}개 중 {current}번째 (팀 평균 차이: {diff})', noReroll:'이 인원 조합에서는 더 균형잡힌 다른 조합이 없어요.', fetchError:'Riot 데이터를 불러오지 못했어요. 잠시 후 새로고침 해주세요.', tierError:'티어 데이터를 불러오지 못했어요.', roles:{duelist:'타격대',controller:'전략가',initiator:'척후대',sentinel:'감시자'},
+      autoMode:'자동 편성', manualMode:'팀이 이미 정해짐', matchFormat:'경기 방식', bo3:'3판 2선승제 (BO3)', bo5:'5판 3선승제 (BO5)', bo3Note:'BO3 · 3전 2선승제', bo5Note:'BO5 · 5전 3선승제', teamALabel:'TEAM A', teamBLabel:'TEAM B', predictMatch:'승부 예측하기', manualStatus:'직접 입력한 두 팀을 기준으로 예측했어요.'
     },
     en: {
-      languageLabel:'Language', title:'VALORANT Scrim Matchmaker', description:'Enter the tiers of 10 players to create two evenly matched teams, then view the predicted score and map compositions.', loading:'Loading Riot data…', playerInput:'Player Input', playerHint:'Enter names and current tiers (10 players)', buildTeams:'Build Teams', resultTitle:'Match Result', resultHint:'The teams are balanced to minimize the average tier difference.', predictedScore:'Predicted Series Score', reroll:'Show Another Balanced Matchup', mapRecommendations:'Recommended Map Compositions', mapHint:'Based on V26 ACT V', footer:'Based on unofficial Riot Games API data (valorant-api.com) · A fan-made tool not affiliated with Riot Games', player:'Player', win:'WIN PREDICTION', average:'Average', even:'This matchup is nearly even', slight:'{team} has a slight advantage', large:'The matchup leans heavily toward {team}', balanced:'Balanced matchup {current} of {count} (team average difference: {diff})', noReroll:'There is no other more balanced matchup for these players.', fetchError:'Could not load Riot data. Please refresh and try again.', tierError:'Could not load tier data.', roles:{duelist:'Duelist',controller:'Controller',initiator:'Initiator',sentinel:'Sentinel'}
+      languageLabel:'Language', title:'VALORANT Scrim Matchmaker', description:'Enter the tiers of 10 players to create two evenly matched teams, then view the predicted score and map compositions.', loading:'Loading Riot data…', playerInput:'Player Input', playerHint:'Enter names and current tiers (10 players)', playerHintManual:'Enter names and current tiers for each team (5 players each)', buildTeams:'Build Teams', resultTitle:'Match Result', resultHint:'The teams are balanced to minimize the average tier difference.', resultHintManual:'Predicted result for the teams you entered as-is.', predictedScore:'Predicted Match Score', reroll:'Show Another Balanced Matchup', mapRecommendations:'Recommended Map Compositions', mapHint:'Based on V26 ACT V', footer:'Based on unofficial Riot Games API data (valorant-api.com) · A fan-made tool not affiliated with Riot Games', player:'Player', win:'WIN PREDICTION', average:'Average', even:'This matchup is nearly even', slight:'{team} has a slight advantage', large:'The matchup leans heavily toward {team}', balanced:'Balanced matchup {current} of {count} (team average difference: {diff})', noReroll:'There is no other more balanced matchup for these players.', fetchError:'Could not load Riot data. Please refresh and try again.', tierError:'Could not load tier data.', roles:{duelist:'Duelist',controller:'Controller',initiator:'Initiator',sentinel:'Sentinel'},
+      autoMode:'Auto Balance', manualMode:'Teams Already Set', matchFormat:'Match Format', bo3:'Best of 3 (BO3)', bo5:'Best of 5 (BO5)', bo3Note:'BO3 · First to 2', bo5Note:'BO5 · First to 3', teamALabel:'TEAM A', teamBLabel:'TEAM B', predictMatch:'Predict Match', manualStatus:'Predicted from the two teams you entered.'
     },
     ja: {
-      languageLabel:'言語', title:'VALORANT内戦マッチメーカー', description:'10人のティアを入力すると、両チームの平均ティアができるだけ近くなるように編成し、予想スコアとマップ別のおすすめ構成を確認できます。', loading:'Riotデータを読み込み中…', playerInput:'プレイヤー入力', playerHint:'名前と現在のティアを入力してください（10人）', buildTeams:'チームを編成', resultTitle:'編成結果', resultHint:'平均ティアの差を最小限にした組み合わせです', predictedScore:'予想セットスコア', reroll:'別のバランス編成を見る', mapRecommendations:'マップ別おすすめ構成', mapHint:'V26 ACT V基準', footer:'非公式Riot Games APIデータ（valorant-api.com）に基づく · Riot Gamesとは無関係のファン制作ツール', player:'プレイヤー', win:'勝利予想', average:'平均', even:'ほぼ互角のマッチアップです', slight:'{team}がやや有利です', large:'{team}が大きく有利です', balanced:'バランス編成 {current} / {count}（チーム平均差: {diff}）', noReroll:'このメンバーでは、これ以上バランスの良い編成はありません。', fetchError:'Riotデータを読み込めませんでした。しばらくしてから再読み込みしてください。', tierError:'ティアデータを読み込めませんでした。', roles:{duelist:'デュエリスト',controller:'コントローラー',initiator:'イニシエーター',sentinel:'センチネル'}
+      languageLabel:'言語', title:'VALORANT内戦マッチメーカー', description:'10人のティアを入力すると、両チームの平均ティアができるだけ近くなるように編成し、予想スコアとマップ別のおすすめ構成を確認できます。', loading:'Riotデータを読み込み中…', playerInput:'プレイヤー入力', playerHint:'名前と現在のティアを入力してください（10人）', playerHintManual:'各チームの名前と現在のティアを入力してください（各5人）', buildTeams:'チームを編成', resultTitle:'編成結果', resultHint:'平均ティアの差を最小限にした組み合わせです', resultHintManual:'入力したチームそのままで予測した結果です', predictedScore:'予想マッチスコア', reroll:'別のバランス編成を見る', mapRecommendations:'マップ別おすすめ構成', mapHint:'V26 ACT V基準', footer:'非公式Riot Games APIデータ（valorant-api.com）に基づく · Riot Gamesとは無関係のファン制作ツール', player:'プレイヤー', win:'勝利予想', average:'平均', even:'ほぼ互角のマッチアップです', slight:'{team}がやや有利です', large:'{team}が大きく有利です', balanced:'バランス編成 {current} / {count}（チーム平均差: {diff}）', noReroll:'このメンバーでは、これ以上バランスの良い編成はありません。', fetchError:'Riotデータを読み込めませんでした。しばらくしてから再読み込みしてください。', tierError:'ティアデータを読み込めませんでした。', roles:{duelist:'デュエリスト',controller:'コントローラー',initiator:'イニシエーター',sentinel:'センチネル'},
+      autoMode:'自動編成', manualMode:'チーム編成済み', matchFormat:'試合形式', bo3:'3本先取2勝制 (BO3)', bo5:'5本先取3勝制 (BO5)', bo3Note:'BO3 · 2勝先取', bo5Note:'BO5 · 3勝先取', teamALabel:'TEAM A', teamBLabel:'TEAM B', predictMatch:'勝敗を予測', manualStatus:'入力した2つのチームを基準に予測しました。'
     }
   };
   let currentLanguage = localStorage.getItem('scrim-language') || 'ko';
+  let currentMode = 'auto'; // 'auto' | 'manual'
+  let winsNeeded = 2; // 2 = BO3 (first to 2), 3 = BO5 (first to 3)
   const t = (key, vars={}) => Object.entries(vars).reduce((s,[k,v]) => s.replaceAll('{'+k+'}', v), I18N[currentLanguage][key] || key);
   function applyLanguage(){
     const lang = I18N[currentLanguage];
@@ -286,7 +348,13 @@
     $$('[data-i18n]').forEach(el => { el.textContent = lang[el.dataset.i18n] || el.textContent; });
     ROLE_LABELS = lang.roles;
     if($('#languageSelect')) $('#languageSelect').value = currentLanguage;
-    if(TIERS.length) renderPlayerGrid();
+    $('#playerHintText').textContent = currentMode === 'manual' ? t('playerHintManual') : t('playerHint');
+    $('#resultHintText').textContent = currentMode === 'manual' ? t('resultHintManual') : t('resultHint');
+    if(TIERS.length){
+      renderPlayerGrid($('#playerGrid'), PLAYER_COUNT);
+      renderPlayerGrid($('#playerGridA'), PLAYER_COUNT/2);
+      renderPlayerGrid($('#playerGridB'), PLAYER_COUNT/2);
+    }
     if(MAPS.length) renderMapGrid();
     if(currentPlayers.length && currentSplits.length) renderResult();
   }
@@ -295,17 +363,17 @@
   const GENERIC_COMP = { duelist:['Reyna'], controller:['Omen'], initiator:['Sova','Fade'], sentinel:['Cypher'] };
 
   const MAP_COMPS = {
-    'ascent':   { duelist:['Jett'],  controller:['Omen'],      initiator:['Sova','Skye'],   sentinel:['Killjoy'] },
-    'bind':     { duelist:['Raze'],  controller:['Brimstone'], initiator:['Skye','Fade'],   sentinel:['Killjoy'] },
-    'haven':    { duelist:['Jett'],  controller:['Astra'],     initiator:['Sova','Breach'], sentinel:['Cypher'] },
-    'split':    { duelist:['Raze'],  controller:['Viper'],     initiator:['Sova','Breach'], sentinel:['Cypher'] },
+    'ascent':   { duelist:['Jett','Pheonix'],  controller:['Omen'],      initiator:['Sova'],   sentinel:['Killjoy'] },
+    'bind':     { duelist:['Raze','Jett'],  controller:['Brimstone'], initiator:['Skye','Fade'],  sentinel:['']},
+    'haven':    { duelist:['Neon','Jett'],  controller:['Omen'],     initiator:['Sova'], sentinel:['Cypher'] },
+    'split':    { duelist:['Raze','Jett'],  controller:['Viper'],     initiator:['Fade'], sentinel:['Cypher'] },
     'icebox':   { duelist:['Jett'],  controller:['Viper'],     initiator:['Sova','Fade'],   sentinel:['Killjoy'] },
     'breeze':   { duelist:['Jett'],  controller:['Harbor'],    initiator:['Skye','Sova'],   sentinel:['Chamber'] },
     'fracture': { duelist:['Raze'],  controller:['Brimstone'], initiator:['Breach','Fade'], sentinel:['Killjoy'] },
     'pearl':    { duelist:['Jett'],  controller:['Astra'],     initiator:['Sova','Fade'],   sentinel:['Cypher'] },
     'lotus':    { duelist:['Raze'],  controller:['Viper'],     initiator:['Fade','Skye'],   sentinel:['Killjoy'] },
     'sunset':   { duelist:['Jett'],  controller:['Omen'],      initiator:['Sova','Fade'],   sentinel:['Cypher'] },
-    'abyss':    { duelist:['Neon'],  controller:['Clove'],     initiator:['Gekko','Fade'],  sentinel:['Killjoy'] },
+    'abyss':    { duelist:['Jett','Waylay'],  controller:['Clove'],     initiator:['Sova'],  sentinel:['Chamber'] },
     'corrode':  { duelist:['Neon'],  controller:['Viper'],     initiator:['Sova','Fade'],   sentinel:['Vyse'] }
   };
   let ROLE_LABELS = I18N[currentLanguage].roles;
@@ -332,7 +400,7 @@
     ]);
 
     TIERS = (tierData.tiers || [])
-      .filter(t => t.tierName && t.tier > 2 && t.smallIcon)
+      .filter(t => t.tierName && t.smallIcon && (t.tier === 0 || t.tier > 2))
       .map(t => ({ tier: t.tier, name: toTitleCase(t.tierName), icon: t.smallIcon }))
       .sort((a,b) => a.tier - b.tier);
 
@@ -363,15 +431,14 @@
   }
 
   // ---------- Player input rendering ----------
-  function renderPlayerGrid(){
-    const grid = $('#playerGrid');
+  function renderPlayerGrid(grid, count){
     const existing = $$('.player-row', grid).map(row => ({
       name: $('input[data-role=name]', row)?.value || '',
       tierIdx: Number($('select[data-role=tier]', row)?.value || 0)
     }));
     grid.innerHTML = '';
-    const midIdx = Math.floor(TIERS.length/2);
-    for(let i=0;i<PLAYER_COUNT;i++){
+    const defaultIdx = 0; // Unranked is the lowest tier value, so it's first after sorting
+    for(let i=0;i<count;i++){
       const row = document.createElement('div');
       row.className = 'player-row';
 
@@ -389,7 +456,7 @@
       const tierPick = document.createElement('div');
       tierPick.className = 'tier-pick';
       const icon = document.createElement('img');
-      icon.src = TIERS[midIdx].icon;
+      icon.src = TIERS[defaultIdx].icon;
       icon.alt = '';
       const select = document.createElement('select');
       select.dataset.role = 'tier';
@@ -397,7 +464,7 @@
         const opt = document.createElement('option');
         opt.value = idx;
         opt.textContent = t.name;
-        if(idx === (existing[i]?.tierIdx ?? midIdx)) opt.selected = true;
+        if(idx === (existing[i]?.tierIdx ?? defaultIdx)) opt.selected = true;
         select.appendChild(opt);
       });
       select.addEventListener('change', () => {
@@ -413,9 +480,9 @@
     }
   }
 
-  function readPlayers(){
-    return $$('.player-row').map((row, i) => {
-      const name = $('input[data-role=name]', row).value.trim() || (t('player')+' '+(i+1));
+  function readPlayers(grid, labelOffset=0){
+    return $$('.player-row', grid).map((row, i) => {
+      const name = $('input[data-role=name]', row).value.trim() || (t('player')+' '+(i+1+labelOffset));
       const tierIdx = Number($('select[data-role=tier]', row).value);
       return { name, tierIdx, tier: TIERS[tierIdx] };
     });
@@ -454,13 +521,28 @@
   let currentSplitIdx = 0;
   let currentPlayers = [];
 
-  function predictScore(avgA, avgB){
+  function binomCoeff(n,k){
+    let res = 1;
+    for(let i=0;i<k;i++) res = res * (n-i) / (i+1);
+    return res;
+  }
+
+  // Predicts a best-of-N series score (race to `wins`) from each team's average tier.
+  function predictSeries(avgA, avgB, wins){
     const diff = avgA - avgB;
-    const p = 1 / (1 + Math.exp(-diff/3)); // probability team A wins
+    const p = 1 / (1 + Math.exp(-diff/3)); // probability team A wins a single map
     const margin = Math.abs(p - 0.5) * 2;   // 0 (even) .. 1 (huge gap)
-    const loser = Math.min(11, Math.max(0, Math.round(13 * (1 - margin))));
-    const aWins = diff >= 0;
-    return { winnerIsA: aWins, winnerScore: 13, loserScore: loser, margin };
+
+    // P(team wins series wins:k) = C(wins-1+k, k) * p_win^wins * p_lose^k
+    let outcomes = [];
+    for(let k=0;k<wins;k++){
+      const combos = binomCoeff(wins - 1 + k, k);
+      outcomes.push({ aScore: wins, bScore: k, prob: combos * Math.pow(p, wins) * Math.pow(1-p, k) });
+      outcomes.push({ aScore: k, bScore: wins, prob: combos * Math.pow(1-p, wins) * Math.pow(p, k) });
+    }
+    outcomes.sort((x,y) => y.prob - x.prob);
+    const top = outcomes[0];
+    return { winnerIsA: top.aScore === wins, aScore: top.aScore, bScore: top.bScore, margin };
   }
 
   function renderTeamCard(el, label, idxList, players, colorClass, isWinner){
@@ -506,17 +588,13 @@
     const players = currentPlayers;
     const avgA = split.sumA / split.a.length;
     const avgB = split.sumB / split.b.length;
-    const pred = predictScore(avgA, avgB);
+    const pred = predictSeries(avgA, avgB, winsNeeded);
 
     renderTeamCard($('#teamCardA'), 'TEAM A', split.a, players, 'A', pred.winnerIsA);
     renderTeamCard($('#teamCardB'), 'TEAM B', split.b, players, 'B', !pred.winnerIsA);
 
     const scoreLine = $('#scoreLine');
-    if(pred.winnerIsA){
-      scoreLine.innerHTML = '<span class="a">'+pred.winnerScore+'</span><span class="sep">:</span><span class="b">'+pred.loserScore+'</span>';
-    } else {
-      scoreLine.innerHTML = '<span class="a">'+pred.loserScore+'</span><span class="sep">:</span><span class="b">'+pred.winnerScore+'</span>';
-    }
+    scoreLine.innerHTML = '<span class="a">'+pred.aScore+'</span><span class="sep">:</span><span class="b">'+pred.bScore+'</span>';
 
     const verdict = $('#verdictLine');
     if(pred.margin < 0.08){
@@ -526,13 +604,21 @@
     } else {
       verdict.textContent = t('large', {team:pred.winnerIsA?'TEAM A':'TEAM B'});
     }
+    $('#formatNote').textContent = winsNeeded === 2 ? t('bo3Note') : t('bo5Note');
 
     $('#resultSection').classList.add('show');
-    $('#statusMsg').textContent = t('balanced', {count:currentSplits.length, current:currentSplitIdx+1, diff:split.diff});
+    $('#rerollRow').style.display = currentMode === 'manual' ? 'none' : 'flex';
+
+    if(currentMode === 'manual'){
+      $('#statusMsgManual').textContent = t('manualStatus');
+    } else {
+      $('#statusMsg').textContent = t('balanced', {count:currentSplits.length, current:currentSplitIdx+1, diff:split.diff});
+    }
   }
 
   function buildTeams(){
-    const players = readPlayers();
+    currentMode = 'auto';
+    const players = readPlayers($('#playerGrid'));
     currentPlayers = players;
     currentSplits = allBalancedSplits(players);
     currentSplitIdx = 0;
@@ -540,8 +626,24 @@
     $('#resultSection').scrollIntoView({ behavior:'smooth', block:'start' });
   }
 
+  function predictManual(){
+    currentMode = 'manual';
+    const playersA = readPlayers($('#playerGridA'));
+    const playersB = readPlayers($('#playerGridB'), playersA.length);
+    const players = playersA.concat(playersB);
+    const aIdx = playersA.map((_, i) => i);
+    const bIdx = playersB.map((_, i) => i + playersA.length);
+    const sumA = aIdx.reduce((s,i)=>s+players[i].tier.tier,0);
+    const sumB = bIdx.reduce((s,i)=>s+players[i].tier.tier,0);
+    currentPlayers = players;
+    currentSplits = [{ a:aIdx, b:bIdx, diff: Math.abs(sumA-sumB), sumA, sumB }];
+    currentSplitIdx = 0;
+    renderResult();
+    $('#resultSection').scrollIntoView({ behavior:'smooth', block:'start' });
+  }
+
   function reroll(){
-    if(currentSplits.length === 0) return;
+    if(currentMode === 'manual' || currentSplits.length === 0) return;
     const bestDiff = currentSplits[0].diff;
     const tied = currentSplits.filter(s => s.diff === bestDiff);
     if(tied.length <= 1){
@@ -613,18 +715,54 @@
       $('#loadingNote').textContent = t('tierError');
       return;
     }
-    renderPlayerGrid();
+    renderPlayerGrid($('#playerGrid'), PLAYER_COUNT);
+    renderPlayerGrid($('#playerGridA'), PLAYER_COUNT/2);
+    renderPlayerGrid($('#playerGridB'), PLAYER_COUNT/2);
     renderMapGrid();
     $('#loadingNote').style.display = 'none';
     $('#app').style.display = 'block';
 
     $('#buildBtn').addEventListener('click', buildTeams);
+    $('#predictBtn').addEventListener('click', predictManual);
     $('#rerollBtn').addEventListener('click', reroll);
     $('#languageSelect').addEventListener('change', e => {
       currentLanguage = e.target.value;
       localStorage.setItem('scrim-language', currentLanguage);
       applyLanguage();
     });
+
+    $('#modeAutoBtn').addEventListener('click', () => {
+      currentMode = 'auto';
+      $('#modeAutoBtn').classList.add('active');
+      $('#modeManualBtn').classList.remove('active');
+      $('#autoSection').style.display = 'block';
+      $('#manualSection').style.display = 'none';
+      $('#playerHintText').textContent = t('playerHint');
+      $('#resultHintText').textContent = t('resultHint');
+    });
+    $('#modeManualBtn').addEventListener('click', () => {
+      currentMode = 'manual';
+      $('#modeManualBtn').classList.add('active');
+      $('#modeAutoBtn').classList.remove('active');
+      $('#autoSection').style.display = 'none';
+      $('#manualSection').style.display = 'block';
+      $('#playerHintText').textContent = t('playerHintManual');
+      $('#resultHintText').textContent = t('resultHintManual');
+    });
+
+    $('#formatBo3Btn').addEventListener('click', () => {
+      winsNeeded = 2;
+      $('#formatBo3Btn').classList.add('active');
+      $('#formatBo5Btn').classList.remove('active');
+      if(currentPlayers.length && currentSplits.length) renderResult();
+    });
+    $('#formatBo5Btn').addEventListener('click', () => {
+      winsNeeded = 3;
+      $('#formatBo5Btn').classList.add('active');
+      $('#formatBo3Btn').classList.remove('active');
+      if(currentPlayers.length && currentSplits.length) renderResult();
+    });
+
     applyLanguage();
   }
 
